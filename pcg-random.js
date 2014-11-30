@@ -138,12 +138,12 @@ var PcgRandom = (function() {
 		}
 
 		var num = 0;
-		var skew = ((-max >>> 0) & max) >>> 0;
+		var skew = ((-max >>> 0) % max) >>> 0;
 		for (num = this.next_(); num < skew; num = this.next_()) {
 			// this loop will rarely execute more than twice,
 			// and is intentionally empty
 		}
-		return num;
+		return num % max;
 	};
 
 	var BIT_53 = 9007199254740992.0;
