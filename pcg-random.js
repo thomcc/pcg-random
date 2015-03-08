@@ -33,9 +33,9 @@ var PcgRandom = (function() {
 		}
 
 		this.state_ = new Int32Array([ 0, 0, incHi >>> 0, (incLo|1) >>> 0 ]);
-		this.next();
+		this.next_();
 		add64_(this.state_, this.state_[0], this.state_[1], seedHi>>>0, seedLo>>>0);
-		this.next();
+		this.next_();
 		return this;
 	};
 
