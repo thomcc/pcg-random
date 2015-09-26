@@ -4,9 +4,11 @@ For information on the algorithm, see [here](http://www.pcg-random.org/).
 
 This implementation is based on the [Minimal C Edition](https://github.com/imneme/pcg-c-basic). Most of the complexity in the code here comes from JavaScript's lack of 64 bit arithmetic support, which is required by the algorithm.
 
-I'm unlikely to do the more complex RNGs in the non-minimal implentations, (or even implement the [pcg32x2 demo](https://github.com/imneme/pcg-c-basic/blob/master/pcg32-demo.c)) for the same reason. 64 bit arithmetic in JavaScript is tedious, and it gets as the bit width increases. Using arbitrary precision numbers might be possible, but is likely to perform significantly worse.
+I'm unlikely to do the more complex RNGs in the non-minimal implentations, (or even implement the [pcg32x2 demo](https://github.com/imneme/pcg-c-basic/blob/master/pcg32-demo.c)) for the same reason. 64 bit arithmetic in JavaScript is tedious, and it gets worse as the bit width increases. Using arbitrary precision numbers might be possible, but not at an acceptable level of performance.
 
 ## Documentation
+
+This library is usable as a common.js module (in something like node or browserify), or directly in the browser. In the browser, it adds a global `PcgRandom` identifier to window. When used as a common.js module, it simply exports `PcgRandom`.
 
 ### `new PcgRandom(...)`
 
@@ -79,14 +81,14 @@ var random = new PcgRandom(5000);
 var n = random.integer(40);
 // ... later
 random.setSeed(5000); // revert seed so that we'll get the same sequence.
-console.assert(n == random.integer(40));
+console.assert(n === random.integer(40));
 ```
 
 ### `PcgRandom.prototype.getState()`, `PcgRandom.prototype.setState(state)`
 
 `getState` returns a copy of the internal state of this random number generator as a JavaScript Array. It takes no arguments.
 
-`setState` takes a single argument, 
+`setState` takes a single argument,
 
 This is provided so that you can save your random number generator's state when your program is not running.
 
@@ -143,15 +145,16 @@ Usage example:
 
 var random = new PcgRandom();
 
-// force everybody to use my RNG, even if they call Math.random()
+// force everybody to use my RNG, even if they call `Math.random()` (Note: this is a bad idea).
 Math.random = function() {
 	return random.number();
 };
+
 ```
 
 ## Caveats
 
-It's worth noting that this isn't a cryptographically secure PRNG. Even if the PCG random is proven to be cryptographically secure, I wouldn't be comfortable with anybody using this code in crypto until someone smarter than me has looked at it.
+It's worth noting that this isn't a cryptographically secure PRNG. If you need one, keep looking.
 
 ## License
 The MIT License (MIT)

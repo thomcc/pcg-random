@@ -160,5 +160,7 @@ var PcgRandom = (function() {
 	return PcgRandom;
 }());
 
-
+if (typeof module !== 'undefined' && module.exports) {
+	module.exports = PcgRandom;
+}
 
