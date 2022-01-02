@@ -1,43 +1,42 @@
 // Copyright 2014-2022 Thom Chiovoloni, released under the MIT license.
 
-/// A random number generator based on the implementation of the PCG algorithm,
-/// as described here: <http://www.pcg-random.org>.
-///
-/// Note that this is not a cryptographically secure random number generator. Do
-/// not use this generator in cryptographically sensitive applications.
+/**
+ * A random number generator based on the implementation of the PCG algorithm,
+ * as described here: <http://www.pcg-random.org>.
+ *
+ * Note that this is not a cryptographically secure random number generator. Do
+ * not use this generator in cryptographically sensitive applications.
+ */
 var PcgRandom = (function() {
 	'use strict';
 
 	/**
 	 * Construct a random number generator that uses the PCG32 algorithm.
 	 *
-	 * ## Overloads
+	 * ### Overloads
 	 *
-	 * This conceptually has several overloads. They are similar to the
-	 * overloads of {@linkcode PcgRandom#setSeed}, with two exceptions.
+	 * The constructor has several overloads, taking between 0 and 4 arguments.
 	 *
-	 * - `new PcgRandom()` produces a `PcgRandom` with a random seed, and the
-	 *   default incrementor value.
+	 * - `new PcgRandom()`: Produce a `PcgRandom` with a random seed, and the
+	 *   default increment value.
 	 *
-	 * - `new PcgRandom(seedLo32: number, seedHi32: number = 0)` produces a
+	 * - `new PcgRandom(seedLo32: number, seedHi32: number = 0)`: Produce a
 	 *   PcgRandom that uses `seedHi32` and `seedLo32` as the 2 parts of the 64
-	 *   bit seed, and uses the default incrementor value.
+	 *   bit seed, and uses the default increment value.
 	 *
-	 * - `new PcgRandom(seedLo32, seedLo32, incLo32)` produces a PcgRandom that
-	 *   uses `seedHi32` and `seedLo32` as the combined 64 bit seed, and
-	 *   `incLo32` as the incrementor.
+	 * - `new PcgRandom(seedLo32: number, seedHi32: number, incLo32: number, incHi32: number)`
+	 *   produces a PcgRandom that uses the provided seed and increment (where `seedLo32` and
+	 *   `seedHi32` are combined to produce a 64 bit seed, and `incLo32` and `incHi32` are
+	 *   combined to produce a 64 bit increment value).
 	 *
-	 * - `new PcgRandom(seedHi32, seedLow32, incHi32, incLow32)` produces a
-	 *   PcgRandom that uses `seedHi32` and `seedLo32` as the combined 64 bit
-	 *   seed.
+	 * - `new PcgRandom(seed: bigint, inc?: bigint)`: If `bigint`s are
+	 *   supported, you can provide the seed and increment value as `bigint`s.
+	 *   (Note that `bigint` support is not at all required to use this
+	 *   library).
 	 *
-	 * ## Caveats:
-	 *
-	 * - It's recommended that you provide all 64 bits of the incrementor, if
-	 *   you're not going to use a default one.
-	 *
-	 * - The least significant bit of the incrementor (e.g. `incLo32`) is
-	 *   ignored, and replaced by `1`.
+	 * - `new PcgRandom(stateArray: [number, number, number, number])`:
+	 *   Construct a `PcgRandom` using a state array (which should have been
+	 *   returned by `getState`).
 	 */
 	function PcgRandom() {
 		this._state = new Uint32Array(4);
@@ -73,14 +72,23 @@ var PcgRandom = (function() {
 	var mathRandom = Math.random;
 
 	/**
-	 * Set the seed and optionally the incrementor value (this value controls
-	 * how the RNG evolves, but the default is good enough for essentially all
+	 * Set the seed and optionally the increment value (this value controls how
+	 * the RNG evolves, but the default is good enough for essentially all
 	 * cases).
 	 *
-	 * Accepts several overloads:
+	 * The arguments to this method are the same as for the constructor, with
+	 * the only difference that if no value is provided for the incrementer, it
+	 * remains the same as it did prior to calling `PcgRandom.prototype.setSeed`
+	 * (instead of reverting to the default incrementer value).
 	 *
-	 * - `setSeed()`: Randomize seed (leaves the the incrementor value in
-	 *   place).
+	 * #### Overloads
+	 *
+	 * `setSeed` accepts several overloads. These are essentially equivalent to
+	 * the overloads of the constructor (the main exception being that in cases
+	 * where `new PcgRandom(...)` will use the default increment value,
+	 * `setSeed` will leave the already-configured increment value in place).
+	 *
+	 * - `setSeed()`: Randomize the seed.
 	 *
 	 * - `setSeed(seedLo32: number, seedHi32: number = 0)`: Set 64 bit seed to
 	 *   each pair of 32 bit values (in parts). Leaves the increment value in
@@ -91,11 +99,12 @@ var PcgRandom = (function() {
 	 *   32 bit values (in parts).
 	 *
 	 * - `setSeed(seed: bigint, inc?: bigint)`: If `bigint`s are supported, you
-	 *   can provide the seed and (optionally) increment value as `bigint`s.
+	 *   can provide the seed and (optionally) increment value as `bigint`s. If
+	 *   `inc` is not provided, the RNG's increment value will be unchanged.
 	 *
-	 * - `setSeed(stateArray: number[4])`: Initialize with a state array,
-	 *   equivalent to `setState`. (This exists mostly so that the constructor
-	 *   can use `setSeed` for everything).
+	 * - `setSeed(stateArray: [number, number, number, number])`: Initialize
+	 *   with a state array, equivalent to `setState`. This exists mostly so
+	 *   that the constructor can use `setSeed` for everything.
 	 */
 	PcgRandom.prototype.setSeed = function PcgRandom_setSeed(seedLo, seedHi, incLo, incHi) {
 		// Did we get a state array?
@@ -241,13 +250,13 @@ var PcgRandom = (function() {
 	 * bias, instead, use the `integer` method. That is:
 	 *
 	 * ```js
-	 * let rng = new PcgRandom();
+	 * var rng = new PcgRandom();
 	 *
 	 * // BAD (biased towards low numbers):
-	 * let zero_to_n_bad = rng.next32() % n;
+	 * var zeroToNBad = rng.next32() % n;
 	 *
 	 * // GOOD (unbiased):
-	 * let zero_to_n_good = rng.integer(n);
+	 * var zeroToNGood = rng.integer(n);
 	 * ```
 	 */
 	PcgRandom.prototype.next32 = function() {
