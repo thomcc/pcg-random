@@ -2,9 +2,7 @@
 
 For information on the algorithm, see [here](http://www.pcg-random.org/).
 
-This implementation is based on the [Minimal C Edition](https://github.com/imneme/pcg-c-basic). Most of the complexity in the code here comes from JavaScript's lack of 64 bit arithmetic support, which is required by the algorithm.
-
-I'm unlikely to do the more complex RNGs in the non-minimal implentations, (or even implement the [pcg32x2 demo](https://github.com/imneme/pcg-c-basic/blob/master/pcg32-demo.c)) for the same reason. 64 bit arithmetic in JavaScript is tedious, and it gets worse as the bit width increases. Using arbitrary precision numbers might be possible, but not at an acceptable level of performance.
+This is not a cryptographically secure random number generator. Do not use this generator in cryptographically sensitive applications.
 
 ## Documentation
 
@@ -12,33 +10,23 @@ This library is usable as a common.js module (in something like node or browseri
 
 ### `new PcgRandom(...)`
 
-PcgRandom's construction takes 4 arguments, all optional.
+Construct a random number generator that uses the PCG32 algorithm.
 
-- `new PcgRandom(seedHi, seedLo, incHi, incLo)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The how 32 bits of the seed.
-    + `incHi`: The high 32 bits of the incrementer.
-    + `incLo`: The how 32 bits of the incrementer.
+#### Overloads
 
-- `new PcgRandom(seedHi, seedLo, inc)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The low 32 bits of the seed.
-    + `inc`: The low 32 bits of the incrementer (0 is used for high 32 bits).
+The constructor has several overloads, taking between 0 and 4 arguments.
 
-- `new PcgRandom(seedHi, seedLo)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The low 32 bits of the seed.
-    + The default incrementer value of 0x14057b7ef767814f is used.
+- `new PcgRandom()`: Produce a `PcgRandom` with a random seed, and the default increment value.
 
-- `new PcgRandom(seed)`
-    - `seed`: The low 32 bits of the seed (0 is used for high 32 bits).
-    - The default incrementer value of `0x14057b7ef767814f` is used. (`0x14057b7e` in the high 32 bits, and `0xf767814f` in the lower 32 bits).
+- `new PcgRandom(seedLo32: number, seedHi32: number = 0)`: Produce a PcgRandom that uses `seedHi32` and `seedLo32` as the 2 parts of the 64 bit seed, and uses the default increment value.
 
-- `new PcgRandom()`
-    - The low 32 bits of the seed are randomly generated using `Math.random()`.
-    - The default incrementer value of `0x14057b7ef767814f` is used. (`0x14057b7e` in the high 32 bits, and `0xf767814f` in the lower 32 bits).
+- `new PcgRandom(seedLo32: number, seedHi32: number, incLo32: number, incHi32: number)` produces a PcgRandom that uses the provided seed and increment (where `seedLo32` and `seedHi32` are combined to produce a 64 bit seed, and `incLo32` and `incHi32` are combined to produce a 64 bit increment value).
 
-Usage example:
+- `new PcgRandom(seed: bigint, inc?: bigint)`: If `bigint`s are supported, you can provide the seed and increment value as `bigint`s. (Note that `bigint` support is not at all required to use this library).
+
+- `new PcgRandom(stateArray: [number, number, number, number])`: Construct a `PcgRandom` using a state array (which should have been returned by `getState`).
+
+#### Usage Example
 
 ```javascript
 window.random = new PcgRandom(Date.now());
@@ -47,34 +35,25 @@ window.random = new PcgRandom(Date.now());
 
 ### `PcgRandom.prototype.setSeed(...)`
 
-Seed the PcgRandom and optionally change the value of its incrementer.
+Set the seed and optionally the increment value (this value controls how the RNG evolves, but the default is good enough for essentially all cases).
 
 The arguments to this method are the same as for the constructor, with the only difference that if no value is provided for the incrementer, it remains the same as it did prior to calling `PcgRandom.prototype.setSeed` (instead of reverting to the default incrementer value).
 
-- `somePcgRandom.setSeed(seedHi, seedLo, incHi, incLo)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The how 32 bits of the seed.
-    + `incHi`: The high 32 bits of the incrementer.
-    + `incLo`: The how 32 bits of the incrementer.
+#### Overloads
 
-- `somePcgRandom.setSeed(seedHi, seedLo, inc)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The low 32 bits of the seed.
-    + `inc`: The low 32 bits of the incrementer (0 is used for high 32 bits).
+`setSeed` accepts several overloads. These are essentially equivalent to the overloads of the constructor (the main exception being that in cases where `new PcgRandom(...)` will use the default increment value, `setSeed` will leave the already-configured increment value in place).
 
-- `somePcgRandom.setSeed(seedHi, seedLo)`
-    + `seedHi`: The high 32 bits of the seed.
-    + `seedLo`: The low 32 bits of the seed.
+- `setSeed()`: Randomize the seed.
 
-- `somePcgRandom.setSeed(seed)`
-    - `seed`: The low 32 bits of the seed (0 is used for high 32 bits).
-    - The incrementer is left unchanged.
+- `setSeed(seedLo32: number, seedHi32: number = 0)`: Set 64 bit seed to each pair of 32 bit values (in parts). Leaves the increment value in place.
 
-- `somePcgRandom.setSeed()`
-    - The low 32 bits of the seed are randomly generated using `Math.random()`.
-    - The incrementer is left unchanged.
+- `setSeed(seedLo32:number, seedHi32:number, incLo32:number, incHi32:number)`: Set 64 bit seed and increment value to each pair of 32 bit values (in parts).
 
-Usage example:
+- `setSeed(seed: bigint, inc?: bigint)`: If `bigint`s are supported, you can provide the seed and (optionally) increment value as `bigint`s. If `inc` is not provided, the RNG's increment value will be unchanged.
+
+- `setSeed(stateArray: [number, number, number, number])`: Initialize with a state array, equivalent to `setState`. This exists mostly so that the constructor can use `setSeed` for everything.
+
+#### Usage Example
 
 ```javascript
 var random = new PcgRandom(5000);
@@ -86,77 +65,91 @@ console.assert(n === random.integer(40));
 
 ### `PcgRandom.prototype.getState()`, `PcgRandom.prototype.setState(state)`
 
-`getState` returns a copy of the internal state of this random number generator as a JavaScript Array. It takes no arguments.
+These are provided so that you can save your random number generator's state when your program is not running, and reload it later.
 
-`setState` takes a single argument,
+- `getState(): [number, number, number, number]` takes no arguments, and returns a copy of the internal state of this random number generator as an Array.
 
-This is provided so that you can save your random number generator's state when your program is not running.
+- `setState(state: [number, number, number, number])` takes a single argument, which is an array that should be returned by `getState`.
 
-Takes no arguments.
-
-Usage example:
+#### Usage Example
 
 ```javascript
-function GameState() {
-	this.rng = new PcgRandom();
-	// ...
+class GameState {
+    constructor() {
+    	this.rng = new PcgRandom();
+	    // ...
+    }
+    // When saving...
+    toJSON() {
+        return {
+            rngState: this.rng.getState();
+            // ...
+        };
+    }
+    // When loading...
+    fromJSON(json) {
+    	this.rng.setState(json.rngState);
+        // ...
+    }
 }
-
-// used to save
-GameState.prototype.toJSON = function() {
-	return {
-		rngState: this.rng.getState();
-		// ...
-	};
-};
-
-// used to load from a save
-GameState.prototype.fromJSON = function(json) {
-	this.rng.setState(json.rngState);
-	// ...
-};
 ```
 
-### `PcgRandom.prototype.integer([max])`
+The state array can also be passed to `new PcgRandom(...)`, so you can clone an RNG by performing
+
+```javascript
+var rng = new PcgRandom();
+var rngClone = new PcgRandom(rng.getState());
+```
+
+### `PcgRandom.prototype.integer(max?: number): number`
 
 Get a uniformly distributed 32 bit integer between 0 (inclusive) and a specified value (exclusive).
 
-If the maximum value isn't specified, the function will return a uniformly distributed 32 bit integer, with no maximum.
+If the maximum value isn't specified, the function will return a uniformly distributed 32 bit integer (equivalent to `PcgRandom.prototype.next32()`).
 
-Usage example:
+#### Usage Example
 
 ```javascript
 var random = new PcgRandom();
-
 var someInts = new Array(50);
 for (var i = 0; i < someInts.length; ++i) {
 	someInts[i] = random.integer(40);
 }
 ```
 
+### `PcgRandom.prototype.number(): number`
 
-### `PcgRandom.prototype.number()`
+Get a uniformly distributed IEEE-754 binary64 between 0.0 and 1.0. This is essentially equivalent to `Math.random()`.
 
-Get a uniformly distributed IEEE-754 double between 0.0 and 1.0, with 53 bits of precision (every bit of the mantissa is randomized)
-
-Usage example:
+#### Usage Example
 
 ```javascript
-
 var random = new PcgRandom();
-
-// force everybody to use my RNG, even if they call `Math.random()` (Note: this is a bad idea).
+// Force everybody to use my RNG, even if they call `Math.random()`.
+// (Caveat: This may not be a good idea)
 Math.random = function() {
-	return random.number();
+    return random.number();
 };
-
 ```
 
-## Caveats
+### `PcgRandom.prototype.next32(): number`
 
-It's worth noting that this isn't a cryptographically secure PRNG. If you need one, keep looking.
+Generate a random 32 bit integer between `[0, 0xffff_ffff]`, inclusive. Generally, `PcgRandom.prototype.integer` should be preferred.
+
+#### Caveats
+
+You should not use this with the `%` operator, as it will introduce bias, instead, use the `integer` method. That is:
+
+```javascript
+var rng = new PcgRandom();
+// BAD (biased towards low numbers):
+var zeroToNBad = rng.next32() % n;
+// GOOD (unbiased):
+var zeroToNGood = rng.integer(n);
+```
 
 ## License
+
 The MIT License (MIT)
 
 Copyright (c) 2014 Thom Chiovoloni
