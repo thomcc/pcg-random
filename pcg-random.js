@@ -121,10 +121,10 @@ var PcgRandom = (function() {
 			if (seedHi != null && typeof seedHi != 'bigint') {
 				throw new TypeError('non-bigint used for `inc` when `seed` is provided');
 			}
+			var bU32Max = BigInt(0xffffffff);
+			var b32 = BigInt(32);
 			sl32 = Number(seedLo & bU32Max);
 			sh32 = Number((seedLo >> b32) & bU32Max);
-			var b32 = BigInt(32);
-			var bU32Max = BigInt(0xffffffff);
 			if (typeof seedHi === "bigint") {
 				// We need to do `(inc << 1) | 1` to match PCG.
 				var b1 = BigInt(1);
