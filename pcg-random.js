@@ -290,7 +290,7 @@ var PcgRandom = (function() {
 		if (!max) {
 			return this.next32();
 		}
-		var umax = umax >>> 0;
+		var umax = max >>> 0;
 		if ((umax & (umax - 1)) === 0) {
 			// fast path for power of 2.
 			return this.next32() & (umax - 1);
